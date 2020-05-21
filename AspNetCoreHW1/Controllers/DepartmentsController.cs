@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AspNetCoreHW1.Models;
+using Microsoft.Data.SqlClient;
 
 namespace AspNetCoreHW1.Controllers
 {
@@ -45,32 +46,31 @@ namespace AspNetCoreHW1.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutDepartment(int id, Department department)
+        public async Task<ActionResult<Department>> PutDepartment(int id, Department department)
         {
             if (id != department.DepartmentId)
             {
                 return BadRequest();
             }
 
-            _context.Entry(department).State = EntityState.Modified;
+            var sqlParameters = new List<SqlParameter>()
+            {
+                new SqlParameter("@DepartmentID", id),
+                new SqlParameter("@Name", department.Name),
+                new SqlParameter("@Budget", department.Budget),
+                new SqlParameter("@StartDate", department.StartDate),
+                new SqlParameter("@InstructorID", department.InstructorId),
+                new SqlParameter("@RowVersion_Original", department.RowVersion)
+            };
 
-            try
+            var result = _context.Database.ExecuteSqlRaw("EXECUTE Department_Update @DepartmentID, @Name, @Budget, @StartDate, @InstructorID, @RowVersion_Original", sqlParameters.ToArray());
+            if (result != 1)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DepartmentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Conflict();
             }
 
-            return NoContent();
+            department = await _context.Department.FirstOrDefaultAsync(x => x.DepartmentId == id);
+            return department;
         }
 
         // POST: api/Departments
@@ -79,8 +79,19 @@ namespace AspNetCoreHW1.Controllers
         [HttpPost]
         public async Task<ActionResult<Department>> PostDepartment(Department department)
         {
-            _context.Department.Add(department);
-            await _context.SaveChangesAsync();
+            var sqlParameters = new List<SqlParameter>()
+            {
+                new SqlParameter("@Name", department.Name),
+                new SqlParameter("@Budget", department.Budget),
+                new SqlParameter("@StartDate", DateTime.Now),
+                new SqlParameter("@InstructorID", department.InstructorId),
+            };
+
+            var result = await _context.Database.ExecuteSqlRawAsync("EXECUTE [Department_Insert] @Name, @Budget, @StartDate, @InstructorID", sqlParameters.ToArray());
+            if (result != 1)
+            {
+                return Conflict();
+            }
 
             return CreatedAtAction("GetDepartment", new { id = department.DepartmentId }, department);
         }
@@ -95,8 +106,17 @@ namespace AspNetCoreHW1.Controllers
                 return NotFound();
             }
 
-            _context.Department.Remove(department);
-            await _context.SaveChangesAsync();
+            var sqlParameters = new List<SqlParameter>()
+            {
+                new SqlParameter("@DepartmentID", department.DepartmentId),
+                new SqlParameter("@RowVersion_Original", department.RowVersion)
+            };
+
+            var result = await _context.Database.ExecuteSqlRawAsync("EXECUTE [Department_Delete] @DepartmentID, @RowVersion_Original", sqlParameters.ToArray());
+            if (result != 1)
+            {
+                return Conflict();
+            }
 
             return department;
         }
