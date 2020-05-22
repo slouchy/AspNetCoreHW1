@@ -25,14 +25,14 @@ namespace AspNetCoreHW1.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Department>>> GetDepartment()
         {
-            return await _context.Department.ToListAsync();
+            return await _context.Department.Where(x=>!x.IsDeleted).ToListAsync();
         }
 
         // GET: api/Departments/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Department>> GetDepartment(int id)
         {
-            var department = await _context.Department.FindAsync(id);
+            var department = await _context.Department.FirstOrDefaultAsync(x=>x.DepartmentId == id && !x.IsDeleted);
 
             if (department == null)
             {

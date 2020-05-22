@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AspNetCoreHW1.Models;
+using Microsoft.VisualBasic;
 
 namespace AspNetCoreHW1.Controllers
 {
@@ -24,14 +25,14 @@ namespace AspNetCoreHW1.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourse()
         {
-            return await _context.Course.ToListAsync();
+            return await _context.Course.Where(x => !x.IsDeleted).ToListAsync();
         }
 
         // GET: api/Courses/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Course>> GetCourse(int id)
         {
-            var course = await _context.Course.FindAsync(id);
+            var course = await _context.Course.FirstOrDefaultAsync(x => x.IsDeleted == false && x.CourseId == id);
 
             if (course == null)
             {
@@ -52,6 +53,7 @@ namespace AspNetCoreHW1.Controllers
                 return BadRequest();
             }
 
+            course.DateModified = DateTime.Now;
             _context.Entry(course).State = EntityState.Modified;
 
             try
@@ -95,7 +97,8 @@ namespace AspNetCoreHW1.Controllers
                 return NotFound();
             }
 
-            _context.Course.Remove(course);
+            course.IsDeleted = true;
+            course.DateModified = DateTime.Now;
             await _context.SaveChangesAsync();
 
             return course;
@@ -108,7 +111,7 @@ namespace AspNetCoreHW1.Controllers
             return students;
         }
 
-        
+
         [HttpGet("GetCourseStudenCount")]
         public async Task<ActionResult<IEnumerable<VwCourseStudentCount>>> GetCourseStudenCount()
         {
