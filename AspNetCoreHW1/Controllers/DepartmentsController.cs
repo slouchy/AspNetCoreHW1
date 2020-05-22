@@ -121,6 +121,14 @@ namespace AspNetCoreHW1.Controllers
             return department;
         }
 
+        [HttpGet("GetDepartmentCourseCount")]
+        public async Task<ActionResult<IEnumerable<VwDepartmentCourseCount>>> GetDepartmentCourseCount()
+        {
+            var count = await _context.VwDepartmentCourseCount.FromSqlRaw<VwDepartmentCourseCount>("SELECT * FROM VwDepartmentCourseCount")
+                .ToListAsync();
+            return count;
+        }
+
         private bool DepartmentExists(int id)
         {
             return _context.Department.Any(e => e.DepartmentId == id);

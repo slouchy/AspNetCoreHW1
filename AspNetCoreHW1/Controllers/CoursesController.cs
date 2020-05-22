@@ -101,6 +101,21 @@ namespace AspNetCoreHW1.Controllers
             return course;
         }
 
+        [HttpGet("GetCourseStudents")]
+        public async Task<ActionResult<IEnumerable<VwCourseStudents>>> GetCourseStudents()
+        {
+            var students = await _context.VwCourseStudents.ToListAsync();
+            return students;
+        }
+
+        
+        [HttpGet("GetCourseStudenCount")]
+        public async Task<ActionResult<IEnumerable<VwCourseStudentCount>>> GetCourseStudenCount()
+        {
+            var count = await _context.VwCourseStudentCount.ToListAsync();
+            return count;
+        }
+
         private bool CourseExists(int id)
         {
             return _context.Course.Any(e => e.CourseId == id);
